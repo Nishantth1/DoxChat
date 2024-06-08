@@ -1,0 +1,8 @@
+fastapi
+uvicorn
+transformers
+pytesseract
+pillow
+pdf2image
+streamlit
+torch
