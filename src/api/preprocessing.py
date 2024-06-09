@@ -1,5 +1,3 @@
-# src/api/preprocessing.py
-
 import re
 
 def clean_text(text):

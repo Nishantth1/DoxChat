@@ -1,43 +1,72 @@
 import streamlit as st
 import requests
+from streamlit_chat import message
+from streamlit_extras.colored_header import colored_header
+from streamlit_extras.add_vertical_space import add_vertical_space
 
-st.title("Document Processing Chatbot")
+st.set_page_config(page_title="DoxChat")
 
-# Initialize conversation history in session state
-if 'conversation' not in st.session_state:
-    st.session_state.conversation = {'User': [], 'System': []}
+logo_path = r"./src/ui/white_logo.png"
 
-# Function to display conversation history
-def display_conversation():
-    # Find the maximum number of messages in either list to avoid index errors
-    max_length = max(len(st.session_state.conversation['User']), len(st.session_state.conversation['System']))
+with st.sidebar:
+    try:
+        st.image(logo_path, width=200)
+    except Exception as e:
+        st.error(f"Error loading image: {e}")
+        
+    model_choice = st.selectbox("Choose Language Model", ["Gemini", "GPT"])
+    st.session_state.model_choice = model_choice
+    st.title('📄 Document Processing Chatbot')
+    st.markdown('''
+    ## About
+    This app allows you to upload a PDF document and perform various tasks such as:
+    - Asking questions
+    - Extracting information
+    - Summarizing the document
+    - Classifying the document
+    - Translating text
     
-    # Interleave messages from User and System
-    for i in range(max_length):
-        if i < len(st.session_state.conversation['User']):
-            st.write(f"**User**: {st.session_state.conversation['User'][i]}")
-        if i < len(st.session_state.conversation['System']):
-            st.write(f"**System**: {st.session_state.conversation['System'][i]}")
-            
+    Powered by Streamlit and custom backend services.
+    ''')
+    add_vertical_space(5)
+    st.write('Made with ❤️ by [Nishant](https://www.linkedin.com/in/your-linkedin)')
 
-# Function to add messages to the conversation
+# Initialize conversation history
+if 'messages' not in st.session_state:
+    st.session_state.messages = [{"role": "assistant", "content": "I'm here to help you with your document. Please upload a PDF to get started."}]
+
+# Display chat messages from history on app rerun
+def display_conversation():
+    for message_data in st.session_state.messages:
+        with st.chat_message(message_data["role"]):
+            st.markdown(message_data["content"])
+
+# Add messages to the conversation
 def add_message(role, content):
-    st.write(role, content)
-    st.session_state.conversation[role].append(content)
+    with st.chat_message(role):
+        st.markdown(content)
+    st.session_state.messages.append({"role": role, "content": content})
     # display_conversation()
 
+if 'processed_text' not in st.session_state:
+    st.session_state.processed_text = ""
+    
 # File upload
-uploaded_file = st.file_uploader("Upload a PDF document", type="pdf")
-if uploaded_file and 'processed_text' not in st.session_state:
-    files = {'file': (uploaded_file.name, uploaded_file, 'application/pdf')}
+uploaded_file = st.file_uploader("Upload a document", type=["pdf", "docx", "jpeg", "png"])
+
+if uploaded_file:
+    st.session_state.processed_text = ""
+    files = {'file': (uploaded_file.name, uploaded_file, uploaded_file.type)}
     response = requests.post("http://127.0.0.1:8000/process-document/", files=files)
     if response.status_code == 200:
         st.session_state.processed_text = response.json().get("processed_text", "")
-        st.write("User", "Uploaded document.")
-        st.write("System", "Document processed successfully.")
-        
+        with st.chat_message('user'):
+            st.markdown('Uploaded document.')
+        with st.chat_message('assistant'):
+            st.markdown('Document processed successfully.')
     else:
-        st.write("System", "Failed to process document. Please try again.")
+        with st.chat_message('assistant'):
+            st.markdown('Failed to process document. Please try again.')
 
 # Display processed text if available
 if 'processed_text' in st.session_state:
@@ -46,59 +75,58 @@ if 'processed_text' in st.session_state:
 # Display the conversation UI
 display_conversation()
 
-# Task selection
+# Task selection and interaction
 if 'processed_text' in st.session_state:
-    task = st.selectbox("Choose a task", ["Ask Question", "Extract Information", "Summarize Document", "Classify Document", "Translate Text"])
+    task = st.selectbox("Choose a task", ["Chat with Doc", "Extract Information", "Summarize Document", "Classify Document", "Translate Text"])
 
-    if task == "Ask Question":
-        question = st.text_input("Enter your question about the document:")
-        if st.button("Ask"):
-            response = requests.post("http://127.0.0.1:8000/ask-question/", params={"text": st.session_state.processed_text, "question": question})
+    if task == "Chat with Doc":
+        prompt = st.text_input("Enter your question about the document:", key="ask_question")
+        if st.button("Submit Question"):
+            response = requests.post("http://127.0.0.1:8000/ask-question/", params={"text": st.session_state.processed_text, "question": prompt, 'model': st.session_state.model_choice})
             if response.status_code == 200:
                 answer = response.json().get("answer", "")
-                add_message("User", question)
-                add_message("System", answer)
+                add_message("user", prompt)
+                add_message("assistant", answer)
             else:
-                add_message("System", "Failed to get answer.")
+                add_message("assistant", "Failed to get answer.")
 
     elif task == "Extract Information":
-        if st.button("Extract Information"):
-            response = requests.post("http://127.0.0.1:8000/extract-information/", params={"text": st.session_state.processed_text})
+        if st.button("Submit Extraction"):
+            response = requests.post("http://127.0.0.1:8000/extract-information/", params={"text": st.session_state.processed_text, 'model': st.session_state.model_choice})
             if response.status_code == 200:
                 extracted_info = response.json().get("extracted_information", "")
-                add_message("User", "Requested extraction of information.")
-                add_message("System", extracted_info)
+                add_message("user", "Extracting Information...")
+                add_message("assistant", extracted_info)
             else:
-                add_message("System", "Failed to extract information.")
+                add_message("assistant", "Failed to extract information.")
 
     elif task == "Summarize Document":
-        if st.button("Summarize Document"):
-            response = requests.post("http://127.0.0.1:8000/summarize-document/", params={"text": st.session_state.processed_text})
+        if st.button("Submit Summary"):
+            response = requests.post("http://127.0.0.1:8000/summarize-document/", params={"text": st.session_state.processed_text, 'model': st.session_state.model_choice})
             if response.status_code == 200:
                 summary = response.json().get("summary", "")
-                add_message("User", "Requested document summary.")
-                add_message("System", summary)
+                add_message("user", "Summarizing Text...")
+                add_message("assistant", summary)
             else:
-                add_message("System", "Failed to summarize document.")
+                add_message("assistant", "Failed to summarize document.")
 
     elif task == "Classify Document":
-        # categories = st.text_input("Enter categories (comma-separated):")
-        if st.button("Classify Document"):
-            response = requests.post("http://127.0.0.1:8000/classify-document/", params={"text": st.session_state.processed_text})
+        if st.button("Submit Classification"):
+            response = requests.post("http://127.0.0.1:8000/classify-document/", params={"text": st.session_state.processed_text, 'model': st.session_state.model_choice})
             if response.status_code == 200:
                 classification = response.json().get("classification", "")
-                add_message("User", f"Classified Document.")
-                add_message("System", classification)
+                add_message("user", "Classifying Document...")
+                add_message("assistant", classification)
             else:
-                add_message("System", "Failed to classify document.")
+                add_message("assistant", "Failed to classify document.")
 
     elif task == "Translate Text":
-        target_language = st.text_input("Enter target language:")
-        if st.button("Translate Text"):
-            response = requests.post("http://127.0.0.1:8000/translate-text/", params={"text": st.session_state.processed_text, "target_language": target_language})
+        target_language = st.text_input("Enter target language:", key="translate_text_lang")
+        if st.button("Submit Translation"):
+            response = requests.post("http://127.0.0.1:8000/translate-text/", params={"text": st.session_state.processed_text, "target_language": target_language, 'model': st.session_state.model_choice})
             if response.status_code == 200:
                 translation = response.json().get("translation", "")
-                add_message("User", f"Requested translation to: {target_language}")
-                add_message("System", translation)
+                add_message("user", f"Requested translation to: {target_language}")
+                add_message("assistant", translation)
             else:
-                add_message("System", "Failed to translate text.")
+                add_message("assistant", "Failed to translate text.")
