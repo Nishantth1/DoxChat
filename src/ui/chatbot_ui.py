@@ -3,6 +3,13 @@ import requests
 from streamlit_chat import message
 from streamlit_extras.colored_header import colored_header
 from streamlit_extras.add_vertical_space import add_vertical_space
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
+
+# Load the API URL from environment variables
+API_URL = os.getenv("API_URL", "http://127.0.0.1:8000")
 
 st.set_page_config(page_title="DoxChat")
 
@@ -46,18 +53,17 @@ def add_message(role, content):
     with st.chat_message(role):
         st.markdown(content)
     st.session_state.messages.append({"role": role, "content": content})
-    # display_conversation()
 
 if 'processed_text' not in st.session_state:
     st.session_state.processed_text = ""
-    
+
 # File upload
 uploaded_file = st.file_uploader("Upload a document", type=["pdf", "docx", "jpeg", "png"])
 
 if uploaded_file:
     st.session_state.processed_text = ""
     files = {'file': (uploaded_file.name, uploaded_file, uploaded_file.type)}
-    response = requests.post("http://127.0.0.1:8000/process-document/", files=files)
+    response = requests.post(f"{API_URL}/process-document/", files=files)
     if response.status_code == 200:
         st.session_state.processed_text = response.json().get("processed_text", "")
         with st.chat_message('user'):
@@ -82,7 +88,7 @@ if 'processed_text' in st.session_state:
     if task == "Chat with Doc":
         prompt = st.text_input("Enter your question about the document:", key="ask_question")
         if st.button("Submit Question"):
-            response = requests.post("http://127.0.0.1:8000/ask-question/", params={"text": st.session_state.processed_text, "question": prompt, 'model': st.session_state.model_choice})
+            response = requests.post(f"{API_URL}/ask-question/", params={"text": st.session_state.processed_text, "question": prompt, 'model': st.session_state.model_choice})
             if response.status_code == 200:
                 answer = response.json().get("answer", "")
                 add_message("user", prompt)
@@ -92,7 +98,7 @@ if 'processed_text' in st.session_state:
 
     elif task == "Extract Information":
         if st.button("Submit Extraction"):
-            response = requests.post("http://127.0.0.1:8000/extract-information/", params={"text": st.session_state.processed_text, 'model': st.session_state.model_choice})
+            response = requests.post(f"{API_URL}/extract-information/", params={"text": st.session_state.processed_text, 'model': st.session_state.model_choice})
             if response.status_code == 200:
                 extracted_info = response.json().get("extracted_information", "")
                 add_message("user", "Extracting Information...")
@@ -102,7 +108,7 @@ if 'processed_text' in st.session_state:
 
     elif task == "Summarize Document":
         if st.button("Submit Summary"):
-            response = requests.post("http://127.0.0.1:8000/summarize-document/", params={"text": st.session_state.processed_text, 'model': st.session_state.model_choice})
+            response = requests.post(f"{API_URL}/summarize-document/", params={"text": st.session_state.processed_text, 'model': st.session_state.model_choice})
             if response.status_code == 200:
                 summary = response.json().get("summary", "")
                 add_message("user", "Summarizing Text...")
@@ -112,7 +118,7 @@ if 'processed_text' in st.session_state:
 
     elif task == "Classify Document":
         if st.button("Submit Classification"):
-            response = requests.post("http://127.0.0.1:8000/classify-document/", params={"text": st.session_state.processed_text, 'model': st.session_state.model_choice})
+            response = requests.post(f"{API_URL}/classify-document/", params={"text": st.session_state.processed_text, 'model': st.session_state.model_choice})
             if response.status_code == 200:
                 classification = response.json().get("classification", "")
                 add_message("user", "Classifying Document...")
@@ -123,7 +129,7 @@ if 'processed_text' in st.session_state:
     elif task == "Translate Text":
         target_language = st.text_input("Enter target language:", key="translate_text_lang")
         if st.button("Submit Translation"):
-            response = requests.post("http://127.0.0.1:8000/translate-text/", params={"text": st.session_state.processed_text, "target_language": target_language, 'model': st.session_state.model_choice})
+            response = requests.post(f"{API_URL}/translate-text/", params={"text": st.session_state.processed_text, "target_language": target_language, 'model': st.session_state.model_choice})
             if response.status_code == 200:
                 translation = response.json().get("translation", "")
                 add_message("user", f"Requested translation to: {target_language}")
