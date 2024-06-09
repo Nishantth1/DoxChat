@@ -36,7 +36,7 @@ with st.sidebar:
     Powered by Streamlit and custom backend services.
     ''')
     add_vertical_space(5)
-    st.write('Made with ❤️ by [Nishant](https://www.linkedin.com/in/your-linkedin)')
+    st.write('Made with ❤️ by [Nishant](https://www.linkedin.com/in/nishant-thakre/)')
 
 # Initialize conversation history
 if 'messages' not in st.session_state:
