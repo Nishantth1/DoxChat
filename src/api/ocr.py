@@ -4,7 +4,7 @@ from PIL import Image
 import docx2pdf
 
 
-pytesseract.pytesseract.tesseract_cmd = r'E:\Tesseract\tesseract.exe'
+pytesseract.pytesseract.tesseract_cmd = r'path\tesseract.exe'
 
 def pdf_to_images(pdf_path):
     return convert_from_path(pdf_path)
@@ -20,7 +20,6 @@ def extract_text_from_pdf(pdf_path):
     return text
 
 def convert_docx_to_pdf(docx_path, pdf_path):
-  """Converts a DOCX file to PDF using docx2pdf."""
   try:
     docx2pdf.convert(docx_path, pdf_path)
     print(f"Successfully converted DOCX to PDF: {docx_path} -> {pdf_path}")
