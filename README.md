@@ -4,6 +4,12 @@
 
 DoxChat is an advanced document processing chatbot that leverages Streamlit for frontend interactions and integrates Optical Character Recognition (OCR) capabilities for processing and analyzing text from various document formats. This application allows users to interact with their documents in real-time, offering functionalities such as question answering, information extraction, content summarization, document classification, and language translation.
 
+## ScreenShots
+![image](https://github.com/Nishantth1/DoxChat/assets/97899868/8faceb28-98e2-4423-8095-3328fd910ceb)
+![image](https://github.com/Nishantth1/DoxChat/assets/97899868/7efb63c7-6c09-4a0b-90f0-77877493c5fc)
+![image](https://github.com/Nishantth1/DoxChat/assets/97899868/464524d8-0746-4a74-be4d-efbcc633071e)
+
+
 ## Features
 
 - **Multi-Format Document Upload**: Users can upload PDF, image (JPEG, PNG), and DOCX documents. The application automatically processes all formats.
